@@ -14,5 +14,5 @@ class Review(commands.Cog):
             user = interaction.user
         await interaction.response.send_message("Not implemented")
 
-def setup(bot):
-    bot.add_cog(Review(bot))
+async def setup(bot):
+    await bot.add_cog(Review(bot))

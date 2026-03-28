@@ -16,6 +16,7 @@ for file in os.listdir(os.getenv("MODULES_PATH")):
 
 @bot.event
 async def on_ready():
+    await bot.tree.sync()
     print("Bot started")
 
 bot.run(os.getenv("TOKEN"))
