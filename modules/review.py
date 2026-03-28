@@ -13,3 +13,6 @@ class Review(commands.Cog):
         if user == None:
             user = interaction.user
         await interaction.response.send_message("Not implemented")
+
+def setup(bot):
+    bot.add_cog(Review(bot))
