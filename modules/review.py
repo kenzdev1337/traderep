@@ -4,7 +4,7 @@ import os
 from discord import app_commands, Embed
 from discord.ext import commands
 
-class Level(commands.Cog):
+class Review(commands.Cog):
     def __init__(self, bot:commands.Bot):
         self.bot = bot
     
