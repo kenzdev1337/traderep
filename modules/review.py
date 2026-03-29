@@ -12,7 +12,9 @@ class Review(commands.Cog):
     async def reputation(self, interaction:discord.Interaction, user:discord.User=None):
         if user == None:
             user = interaction.user
-        await interaction.response.send_message("Not implemented")
+        await interaction.response.defer()
+        #Machinations
+        await interaction.followup.send("Not implemented")
 
 async def setup(bot):
     await bot.add_cog(Review(bot))
