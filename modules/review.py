@@ -28,15 +28,11 @@ class Review(commands.Cog):
 
         review_text = modal.value
 
-        print(review_text)
-
         await interaction.followup.send(view=view, ephemeral=True)
         await view.wait()
 
         trade_value = view.trade_value
         experience = view.experience
-
-        print(trade_value)
 
         self.reviews_db.connect()
         table_name = f"{user.id}_reviews"
