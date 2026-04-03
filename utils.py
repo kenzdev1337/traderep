@@ -19,3 +19,19 @@ class Database():
         result = cursor.fetchmany(count)
         result = [data[0] for data in result]
         return result
+    
+    def push(self, request):
+        cursor = self.db.cursor()
+        cursor.execute(request)
+        self.db.commit()
+
+    def execute(self, request):
+        cursor = self.db.cursor()
+        cursor.execute(request)
+
+    def fetchall(self, request):
+        cursor = self.db.cursor()
+        cursor.execute(request)
+        result = cursor.fetchall()
+        result = [data[0] for data in result]
+        return result

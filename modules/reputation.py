@@ -8,6 +8,7 @@ from discord.ext import commands
 class Reputation(commands.Cog):
     def __init__(self, bot:commands.Bot):
         self.bot = bot
+        self.reputation_db = utils.Database(os.getenv("REP_USERNAME"), os.getenv("REP_PASSWORD"), os.getenv("REP_HOSTNAME"), os.getenv("REP_PORT"), os.getenv("REP_DB_NAME"))
     
     @app_commands.command(name="reputation", description="Voir la réputation d'un membre")
     @app_commands.guild_only()
@@ -19,10 +20,9 @@ class Reputation(commands.Cog):
         if user == None:
             user = interaction.user
         await interaction.response.defer()
-
-        reputation_db = utils.Database(os.getenv("REP_USERNAME"), os.getenv("REP_PASSWORD"), os.getenv("REP_HOSTNAME"), os.getenv("REP_PORT"), os.getenv("REP_DB_NAME"))
-        reputation_db.connect()
-        result = reputation_db.fetch(f"SELECT score FROM reputation WHERE user_id = {user.id}", 1)
+        
+        self.reputation_db.connect()
+        result = self.reputation_db.fetch(f"SELECT score FROM reputation WHERE user_id = {user.id}", 1)
 
         if result == []:
             embed = Embed(color=color, title=f"Réputation de {user.name}")
@@ -36,7 +36,7 @@ class Reputation(commands.Cog):
             return
 
         score_value = result[0]
-        print(score_value)
+
         color = discord.Color.dark_gray()
 
         if score_value > 0:
