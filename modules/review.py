@@ -47,15 +47,18 @@ class Review(commands.Cog):
     async def list_reviews(self, interaction:discord.Interaction, user:discord.User=None):
         if user == None:
             user = interaction.user
+        if user.bot:
+            await interaction.response.send_message("Vous ne pouvez voir que les avis des utilisateurs")
+            return
 
         currentpage = 0
 
         result = self.list_logic(user, currentpage)
-        view = PageView(result[1])
+        view = PageView(currentpage, result[1])
 
         while True:
             result = self.list_logic(user, currentpage)
-            view = PageView(result[1])
+            view = PageView(currentpage, result[1])
             try:
                 await interaction.response.send_message(embed=result[0], view=view)
             except:
@@ -72,7 +75,7 @@ class Review(commands.Cog):
         self.reviews_db.connect()
         table_count = self.reviews_db.fetch(f"SELECT COUNT(*) FROM information_schema.tables WHERE table_name = '{user.id}_reviews'", 1)
         if table_count[0] == 0:
-            embed = discord.Embed(title=f"Avis de {user.global_name}")
+            embed = discord.Embed(title=f"Avis de {user.name}")
             embed.add_field(name="Pas encore d'avis", value="Cet utilisateur n'a pas encore d'avis")
         else:
             count = self.reviews_db.fetch(f"SELECT COUNT(*) FROM {user.id}_reviews", 1)
@@ -81,7 +84,7 @@ class Review(commands.Cog):
             else:
                 pagecount = math.floor(count[0] / 10) + 1
             reviews = self.reviews_db.fetch_reviews(f"SELECT * FROM {user.id}_reviews")
-            embed = discord.Embed(title=f"Avis de {user.global_name}", description=f"Page{currentpage+1}/{pagecount}")
+            embed = discord.Embed(title=f"Avis de {user.name}", description=f"Page {currentpage+1}/{pagecount}")
             if 10*currentpage+10 > count[0]:
                 max = count[0]
             else:
@@ -151,14 +154,13 @@ class ReviewModal(discord.ui.Modal, title="Avis"):
         await interaction.response.defer()
 
 class PageView(discord.ui.View):
-    def __init__(self, max_pages):
-        self.current_page = 0
+    def __init__(self, currentpage:int, max_pages:int):
+        self.current_page = currentpage
         self.max_pages = max_pages
         super().__init__()
 
     @discord.ui.button(label="Page précédente", emoji="⏪")
     async def previous_button(self, interaction:discord.Interaction, button:discord.ui.Button):
-        print(self.current_page-1 < 0)
         if self.current_page-1 < 0:
             await interaction.response.send_message("Pas de page supplémentaire à afficher", ephemeral=True)
             return
@@ -167,7 +169,7 @@ class PageView(discord.ui.View):
         await interaction.response.defer()
 
     @discord.ui.button(label="Page suivante", emoji="⏩")
-    async def previous_button(self, interaction:discord.Interaction, button:discord.ui.Button):
+    async def next_button(self, interaction:discord.Interaction, button:discord.ui.Button):
         if self.current_page+1 > self.max_pages:
             await interaction.response.send_message("Pas de page supplémentaire à afficher", ephemeral=True)
             return
