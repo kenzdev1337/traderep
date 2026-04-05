@@ -13,25 +13,27 @@ class Database():
     def connect(self):
         self.db = mysql.connector.connect(host=self.hostname, port=self.port, username=self.username, password=self.password, database=self.database)
     
-    def fetch(self, request, count):
+    def fetch(self, request:str, count:int):
         cursor = self.db.cursor()
         cursor.execute(request)
         result = cursor.fetchmany(count)
         result = [data[0] for data in result]
         return result
     
-    def push(self, request):
+    def push(self, request:str):
         cursor = self.db.cursor()
         cursor.execute(request)
         self.db.commit()
 
-    def execute(self, request):
+    def execute(self, request:str):
         cursor = self.db.cursor()
         cursor.execute(request)
 
-    def fetchall(self, request):
+    def fetch_reviews(self, request:str):
         cursor = self.db.cursor()
         cursor.execute(request)
         result = cursor.fetchall()
-        result = [data[0] for data in result]
-        return result
+        res = []
+        for tuple in result:
+            res.append(tuple +(0, ) * (1 - len(tuple)))
+        return res

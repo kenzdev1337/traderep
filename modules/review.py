@@ -1,6 +1,7 @@
 import discord
 import utils
 import os
+import math
 
 from discord.ext import commands
 from discord import app_commands, Embed
@@ -21,7 +22,7 @@ class Review(commands.Cog):
             await interaction.response.send_message("Vous ne pouvez évaluer que des utilisateur")
             return
         
-        view = CustomView()
+        view = ReviewView()
         modal = ReviewModal(user)
         await interaction.response.send_modal(modal)
         await modal.wait()
@@ -35,13 +36,8 @@ class Review(commands.Cog):
         experience = view.experience
 
         self.reviews_db.connect()
-        table_name = f"{user.id}_reviews"
-        result = self.reviews_db.fetchall("SHOW TABLES")
-        table_count = 0
-        for name in result:
-            if name == table_name:
-                table_count += 1
-        if table_count == 0:
+        table_count = self.reviews_db.fetch(f"SELECT COUNT(*) FROM information_schema.tables WHERE table_name = '{user.id}_reviews'", 1)
+        if table_count[0] == 0:
             self.reviews_db.execute(f"CREATE TABLE {user.id}_reviews (id INT(10) NOT NULL AUTO_INCREMENT, review_text VARCHAR(255), user_id BIGINT(20), trade_value INT(1), experience INT(1), PRIMARY KEY(id))")
         self.reviews_db.push(f"INSERT INTO {user.id}_reviews (review_text, user_id, trade_value, experience) VALUES ('{review_text}', '{interaction.user.id}', '{trade_value}', '{experience}')")
 
@@ -51,14 +47,62 @@ class Review(commands.Cog):
     async def list_reviews(self, interaction:discord.Interaction, user:discord.User=None):
         if user == None:
             user = interaction.user
-        await interaction.response.send_message("Not implemented")
+
+        currentpage = 0
+
+        result = self.list_logic(user, currentpage)
+        view = PageView(result[1])
+
+        while True:
+            result = self.list_logic(user, currentpage)
+            view = PageView(result[1])
+            try:
+                await interaction.response.send_message(embed=result[0], view=view)
+            except:
+                msg = await interaction.original_response()
+                await msg.edit(embed=result[0], view=view)
+            await view.wait()
+            currentpage = view.current_page
+
+    def list_logic(self, user:discord.User, currentpage:int):
+        pagecount = 0
+        currentpage = currentpage
+        max = 0
+        
+        self.reviews_db.connect()
+        table_count = self.reviews_db.fetch(f"SELECT COUNT(*) FROM information_schema.tables WHERE table_name = '{user.id}_reviews'", 1)
+        if table_count[0] == 0:
+            embed = discord.Embed(title=f"Avis de {user.global_name}")
+            embed.add_field(name="Pas encore d'avis", value="Cet utilisateur n'a pas encore d'avis")
+        else:
+            count = self.reviews_db.fetch(f"SELECT COUNT(*) FROM {user.id}_reviews", 1)
+            if count[0] % 10 == 0:
+                pagecount = count[0] / 10
+            else:
+                pagecount = math.floor(count[0] / 10) + 1
+            reviews = self.reviews_db.fetch_reviews(f"SELECT * FROM {user.id}_reviews")
+            embed = discord.Embed(title=f"Avis de {user.global_name}", description=f"Page{currentpage+1}/{pagecount}")
+            if 10*currentpage+10 > count[0]:
+                max = count[0]
+            else:
+                max = 10*currentpage+10
+            for i in range(10*currentpage, max):
+                experience = 0
+                if reviews[i][4] == -1:
+                    experience = "Négatif ❌"
+                else:
+                    experience = "Positif ✅"
+                embed.add_field(name=experience, value=reviews[i][1], inline=False)
+        return embed, pagecount-1
+        
 
 async def setup(bot:commands.Bot):
     await bot.add_cog(Review(bot))
 
 #Classes UI
 
-class CustomView(discord.ui.View):
+#Interface infos supplémentaires
+class ReviewView(discord.ui.View):
     def __init__(self):
         self.trade_value = None
         self.experience = None
@@ -92,7 +136,8 @@ class CustomView(discord.ui.View):
         if self.trade_value != None and self.experience != None:
             self.stop()
         await interaction.response.defer()
-    
+
+#Modal
 class ReviewModal(discord.ui.Modal, title="Avis"):
     def __init__(self, user:discord.User):
         self.user = user
@@ -103,4 +148,29 @@ class ReviewModal(discord.ui.Modal, title="Avis"):
 
     async def on_submit(self, interaction:discord.Interaction):
         self.value = self.review.value
+        await interaction.response.defer()
+
+class PageView(discord.ui.View):
+    def __init__(self, max_pages):
+        self.current_page = 0
+        self.max_pages = max_pages
+        super().__init__()
+
+    @discord.ui.button(label="Page précédente", emoji="⏪")
+    async def previous_button(self, interaction:discord.Interaction, button:discord.ui.Button):
+        print(self.current_page-1 < 0)
+        if self.current_page-1 < 0:
+            await interaction.response.send_message("Pas de page supplémentaire à afficher", ephemeral=True)
+            return
+        self.current_page -= 1
+        self.stop()
+        await interaction.response.defer()
+
+    @discord.ui.button(label="Page suivante", emoji="⏩")
+    async def previous_button(self, interaction:discord.Interaction, button:discord.ui.Button):
+        if self.current_page+1 > self.max_pages:
+            await interaction.response.send_message("Pas de page supplémentaire à afficher", ephemeral=True)
+            return
+        self.current_page += 1
+        self.stop()
         await interaction.response.defer()
