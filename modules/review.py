@@ -14,6 +14,7 @@ class Review(commands.Cog):
     list = app_commands.Group(name="list", description="...")
 
     @app_commands.command(name="review", description="Donner un avis sur un échange")
+    @app_commands.guild_only()
     async def review(self, interaction:discord.Interaction, user:discord.User):
         if user == interaction.user:
             await interaction.response.send_message("Vous ne pouvez pas laisser d'avis à vous-même")
@@ -44,6 +45,7 @@ class Review(commands.Cog):
         await interaction.followup.send(content=f"Avis donné à {user.mention}", ephemeral=True)
 
     @list.command(name="reviews", description="Voir les avis d'un membre")
+    @app_commands.guild_only()
     async def list_reviews(self, interaction:discord.Interaction, user:discord.User=None):
         if user == None:
             user = interaction.user
@@ -77,6 +79,10 @@ class Review(commands.Cog):
         if table_count[0] == 0:
             embed = discord.Embed(title=f"Avis de {user.name}")
             embed.add_field(name="Pas encore d'avis", value="Cet utilisateur n'a pas encore d'avis")
+            try:
+                embed.set_thumbnail(url=user.avatar.url)
+            except:
+                pass
         else:
             count = self.reviews_db.fetch(f"SELECT COUNT(*) FROM {user.id}_reviews", 1)
             if count[0] % 10 == 0:
@@ -85,6 +91,10 @@ class Review(commands.Cog):
                 pagecount = math.floor(count[0] / 10) + 1
             reviews = self.reviews_db.fetch_reviews(f"SELECT * FROM {user.id}_reviews")
             embed = discord.Embed(title=f"Avis de {user.name}", description=f"Page {currentpage+1}/{pagecount}")
+            try:
+                embed.set_thumbnail(url=user.avatar.url)
+            except:
+                pass
             if 10*currentpage+10 > count[0]:
                 max = count[0]
             else:
