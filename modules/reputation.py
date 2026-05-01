@@ -29,8 +29,8 @@ class Reputation(commands.Cog):
         self.reviews_db.connect()
         result = self.reputation_db.fetch(f"SELECT score FROM reputation WHERE user_id = {user.id}", 1)
         table_count = self.reviews_db.fetch(f"SELECT COUNT(*) FROM information_schema.tables WHERE table_name = '{user.id}_reviews'", 1)
-
-        if result == [] and table_count[0] == 0:
+        
+        if result == [] or table_count[0] == 0:
             if result == []:
                 self.reputation_db.push(f"INSERT INTO reputation (user_id, score, max_value, review_count) VALUES ('{user.id}', '0', '0', '0')")
             embed = Embed(color=color, title=f"Réputation de {user.name}")
