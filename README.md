@@ -47,7 +47,7 @@ BDD avis :
 BDD profil :
 
 - Toutes les données sont stockées dans une table 
-- Elle stocke l'ID utilisateur Discord (BIGINT), le socre (INT), la valeur d'échange maximale (INT) et le nombre d'avis (INT)
+- Elle stocke l'ID utilisateur Discord (BIGINT), le score (INT), la valeur d'échange maximale (INT) et le nombre d'avis (INT)
 - Créez la table suivante :
 
 ```sql
